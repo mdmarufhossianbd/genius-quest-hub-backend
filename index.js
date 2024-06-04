@@ -53,6 +53,13 @@ async function run() {
         res.send(result);
     })
 
+    app.get('/users/:id', async(req, res)=>{
+      const email = req.params.id;
+      const query = {email : email}      
+      const result = await userCollections.findOne(query);      
+      res.send(result);
+    })
+
     app.delete('/users/:id', async(req, res)=>{
       const id = req.params.id;
       const query = {
@@ -80,6 +87,24 @@ async function run() {
       res.send(result)
     })
 
+    // admin find
+    app.get('/users/admin/:email', async (req, res) => {
+      const email = req.params.email;
+
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: 'forbidden access' })
+      // }
+
+      const query = { email: email };
+      const user = await userCollections.findOne(query)
+      let admin = false;
+      if (user) {
+        admin = user?.role === 'Admin';        
+      }
+      res.send({admin});
+    })
+
+    // creator find
     app.get('/users/creators/:id', async(req, res)=>{
       const email = req.params.id;
       const query = {email : email};
