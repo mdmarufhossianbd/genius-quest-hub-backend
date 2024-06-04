@@ -107,7 +107,7 @@ async function run() {
     // creator find
     app.get('/users/creators/:email', async(req, res)=>{
       const email = req.params.email;
-      
+
       const query = {email : email};
       const user = await userCollections.findOne(query);
       let creator = false;
@@ -128,6 +128,21 @@ async function run() {
         res.send(result);
     })
 
+    app.get('/contests/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await contestCollections.findOne(query);
+      res.send(result)
+    })
+
+    app.get('/contests/my-contests/:email', async(req, res)=>{
+      const email = req.params.email;
+      const query = {creatorEmail : email}
+      const result = await contestCollections.find(query).toArray();
+      res.send(result)
+      
+    })
+
     app.delete('/contests/:id', async(req, res)=>{
       const id = req.params.id;
       const query = {_id : new ObjectId(id)};
@@ -139,9 +154,7 @@ async function run() {
       const id = req.params.id;
       const filter = {_id : new ObjectId(id)}
       const updateStatus = {
-        $set: {
-          status : 'Publish'
-        }
+            $set: {contestStatus : 'Publish'}
       }
       const result = await contestCollections.updateOne(filter, updateStatus);
       res.send(result);
