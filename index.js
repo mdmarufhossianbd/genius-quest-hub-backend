@@ -69,6 +69,32 @@ async function run() {
       res.send(result);
     })
 
+    // user block
+    app.patch('/users/block/:id', async(req, res)=>{
+      const id = req.params.id;
+      const filter = {_id : new ObjectId(id)}
+      const updateBlock = {
+        $set: {
+          status: "block"
+        }
+      }
+      const result = await userCollections.updateOne(filter, updateBlock);
+      res.send(result);
+    })
+    
+    // unblock
+    app.patch('/users/unblock/:id', async(req, res)=>{
+      const id = req.params.id;
+      const filter = {_id : new ObjectId(id)}
+      const updateBlock = {
+        $set: {
+          status: "unBlock"
+        }
+      }
+      const result = await userCollections.updateOne(filter, updateBlock);
+      res.send(result);
+    })
+
 
     // make creator
     app.patch('/users/creators/:id', async(req, res)=>{ 
@@ -77,10 +103,6 @@ async function run() {
       const updateUserRole = {
         $set: {
           role: 'Creator',
-          status: {
-            block: 'Block',
-            unBlock: 'Unblock'
-          }
         }
       }
       const result = await userCollections.updateOne(filter, updateUserRole);
