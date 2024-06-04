@@ -105,11 +105,16 @@ async function run() {
     })
 
     // creator find
-    app.get('/users/creators/:id', async(req, res)=>{
-      const email = req.params.id;
+    app.get('/users/creators/:email', async(req, res)=>{
+      const email = req.params.email;
+      
       const query = {email : email};
       const user = await userCollections.findOne(query);
-      res.send(user)
+      let creator = false;
+      if(user){
+        creator = user?.role === "Creator"
+      }
+      res.send({creator})
     })
 
     // contests
