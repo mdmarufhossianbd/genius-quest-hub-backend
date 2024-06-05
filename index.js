@@ -88,7 +88,7 @@ async function run() {
       const filter = {_id : new ObjectId(id)}
       const updateBlock = {
         $set: {
-          status: "unBlock"
+          status: "Unblock"
         }
       }
       const result = await userCollections.updateOne(filter, updateBlock);
