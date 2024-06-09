@@ -1,8 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const stripe = require('stripe')(process.env.STRIPE_SECRECT_KEY) 
 const port = process.env.PORT || 5000
-require('dotenv').config();
+
 
 
 app.use(cors({
@@ -252,6 +254,21 @@ async function run() {
       res.send(result)
     })
 
+    // payment
+    app.post('/create-payment', async(req, res)=>{
+      const {price} = req.body;
+      const amount = parseInt( price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount : amount,
+        currency : 'usd',
+        payment_method_types : ['card']
+      })
+      res.send({
+        clientSecret : paymentIntent.client_secret
+      })
+    })
+
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({
       ping: 1
