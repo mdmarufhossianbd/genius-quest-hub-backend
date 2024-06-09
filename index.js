@@ -39,7 +39,9 @@ async function run() {
     const contestCollections = client.db('geniusQuestHub').collection('contests')
     const userCollections = client.db('geniusQuestHub').collection('users')
     const commentCollections = client.db('geniusQuestHub').collection('comments')
-
+    const contestSummeryCollections = client.db('geniusQuestHub').collection('contestSummerys')
+    const registeredCollections = client.db('geniusQuestHub').collection('registereds')
+    
 
 
     // users
@@ -254,10 +256,63 @@ async function run() {
       res.send(result)
     })
 
+    // contest summery
+    app.post('/contest-summery', async(req, res) => {
+      const result = await contestSummeryCollections.insertOne(req.body);      
+      res.send(result)
+    })
+
+    app.put('/contest-summery/:email', async(req, res)=>{
+      const email = req.params.email;
+      const filter = {email : email};
+      const options = { upsert : true};
+      const updateConfirmBookContest = req.body;
+      const registeredContest = {
+        $set : {
+          contestId : updateConfirmBookContest.contestId,
+          email : updateConfirmBookContest.email,
+          name : updateConfirmBookContest.name,
+          contestName : updateConfirmBookContest.contestName,
+          contestRegistrationFee : updateConfirmBookContest.contestRegistrationFee,
+          creatorEmail : updateConfirmBookContest.creatorEmail,
+          creatorName : updateConfirmBookContest.creatorName,
+          contestDeadline : updateConfirmBookContest.contestDeadline,
+          contestImage : updateConfirmBookContest.contestImage,
+          contestPrize : updateConfirmBookContest.contestPrize,
+          contestPublishDate : updateConfirmBookContest.contestPublishDate,
+          contestType : updateConfirmBookContest.contestContestType
+        }
+      }
+      const result = await contestSummeryCollections.updateOne(filter, registeredContest, options);
+      res.send(result);
+    })
+
+    app.get('/contest-summery', async(req, res)=>{
+      const email = req.query.email;      
+      const query = {email : email};      
+      const result = await contestSummeryCollections.find(query).toArray();      
+      res.send(result)
+    })
+
+    // registered contest
+    app.post('/registered-contest', async(req, res)=>{
+      const result = await registeredCollections.insertOne(req.body);
+      res.send(result);
+    })
+
+    app.get('/registered-contest', async(req, res)=>{
+      const email = req.query.email;
+      const query = {email : email};
+      const result = await registeredCollections.find(query).toArray();
+      res.send(result);
+    })
+
+
+
     // payment
     app.post('/create-payment', async(req, res)=>{
-      const {price} = req.body;
-      const amount = parseInt( price * 100);
+      const {regFee} = req.body;
+      const amount = parseInt( regFee * 100);
       const paymentIntent = await stripe.paymentIntents.create({
         amount : amount,
         currency : 'usd',
@@ -268,7 +323,7 @@ async function run() {
       })
     })
 
-    
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({
       ping: 1
