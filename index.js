@@ -300,6 +300,11 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/registered-contests', async(req, res)=>{
+      const result = await registeredCollections.find(req.body).toArray();
+      res.send(result);
+    })
+
     app.get('/registered-contest', async(req, res)=>{
       const email = req.query.email;
       const query = {userEmail : email};
@@ -307,6 +312,12 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/registered-contest/creator', async(req, res)=>{
+      const email = req.query.email;
+      const query = {creatorEmail : email};
+      const result = await registeredCollections.find(query).toArray();
+      res.send(result);
+    })
 
 
     // payment
