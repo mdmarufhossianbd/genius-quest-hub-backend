@@ -302,7 +302,7 @@ async function run() {
 
     app.get('/registered-contest', async(req, res)=>{
       const email = req.query.email;
-      const query = {email : email};
+      const query = {userEmail : email};
       const result = await registeredCollections.find(query).toArray();
       res.send(result);
     })
