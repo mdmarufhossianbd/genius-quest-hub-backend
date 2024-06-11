@@ -41,7 +41,7 @@ async function run() {
     const commentCollections = client.db('geniusQuestHub').collection('comments')
     const contestSummeryCollections = client.db('geniusQuestHub').collection('contestSummerys')
     const registeredCollections = client.db('geniusQuestHub').collection('registereds')
-    
+    const submitContestCollections = client.db('geniusQuestHub').collection('submitContests')
 
 
     // users
@@ -300,6 +300,13 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/registered-contests/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await registeredCollections.findOne(query);
+      res.send(result)
+    })
+
     app.get('/registered-contests', async(req, res)=>{
       const result = await registeredCollections.find(req.body).toArray();
       res.send(result);
@@ -319,6 +326,10 @@ async function run() {
       res.send(result);
     })
 
+    app.post('/submit-contest', async(req, res)=>{
+      const result = await submitContestCollections.insertOne(req.body);
+      res.send(result)
+    })
 
     // payment
     app.post('/create-payment', async(req, res)=>{
