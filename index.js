@@ -326,11 +326,24 @@ async function run() {
       res.send(result);
     })
 
+    // contest submit
     app.post('/submit-contest', async(req, res)=>{
       const result = await submitContestCollections.insertOne(req.body);
       res.send(result)
     })
 
+    app.get('/submit-contest', async(req, res)=>{
+      const result = await submitContestCollections.find().toArray();
+      res.send(result)
+    })
+
+    app.get('/submit-contest/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await submitContestCollections.findOne(query);
+      console.log(result);
+      res.send(result)
+    })
     // payment
     app.post('/create-payment', async(req, res)=>{
       const {regFee} = req.body;
