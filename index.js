@@ -245,6 +245,21 @@ async function run() {
       res.send(result);
     })
 
+    // search
+    app.get('/search', async(req, res) => {
+      const searchKW = req.query.keyword;     
+      let query = {
+        contestContestType : {
+          $regex : `${searchKW}`,
+          $options : 'i'
+        }
+      }
+      console.log(query);
+      const result = await contestCollections.find(query).toArray();
+      console.log(result);
+      res.send(result);
+    })
+
     // comments
     app.post('/comments', async (req, res) => {
       const result = await commentCollections.insertOne(req.body)
