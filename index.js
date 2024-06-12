@@ -311,7 +311,14 @@ async function run() {
 
     // registered contest
     app.post('/registered-contest', async(req, res)=>{
+      const regContest = req.body;
       const result = await registeredCollections.insertOne(req.body);
+      // update contestParticipateCount
+      const updatePraticipate = {
+        $inc : { contestParticipateCount : 1}
+      }
+      const contestQuery = {_id : new ObjectId(regContest.contestId)}
+      const updatePraticipateCount = await contestCollections.updateOne(contestQuery, updatePraticipate)
       res.send(result);
     })
 
