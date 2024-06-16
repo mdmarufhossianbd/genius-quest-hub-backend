@@ -172,8 +172,22 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/contests', async (req, res) => {
+    app.get('/contests', async(req, res)=>{
       const result = await contestCollections.find().toArray();
+      res.send(result)
+    })
+
+    app.get('/popular-contests', async (req, res) => {
+      const filter = req.query;
+      const query = {
+        contestParticipateCount : {$gte : 0}
+      };
+      const options = {
+        sort : {
+          contestParticipateCount : filter.sort === "asc" ? 1 : -1
+        }
+      };
+      const result = await contestCollections.find(query, options).toArray();
       res.send(result);
     })
 
@@ -254,9 +268,7 @@ async function run() {
           $options : 'i'
         }
       }
-      console.log(query);
       const result = await contestCollections.find(query).toArray();
-      console.log(result);
       res.send(result);
     })
 
@@ -363,7 +375,6 @@ async function run() {
       const id = req.params.id;
       const query = {_id : new ObjectId(id)};
       const result = await submitContestCollections.findOne(query);
-      console.log(result);
       res.send(result)
     })
     // payment
