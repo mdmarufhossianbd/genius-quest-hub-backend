@@ -36,12 +36,13 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const contestCollections = client.db('geniusQuestHub').collection('contests')
-    const userCollections = client.db('geniusQuestHub').collection('users')
-    const commentCollections = client.db('geniusQuestHub').collection('comments')
-    const contestSummeryCollections = client.db('geniusQuestHub').collection('contestSummerys')
-    const registeredCollections = client.db('geniusQuestHub').collection('registereds')
-    const submitContestCollections = client.db('geniusQuestHub').collection('submitContests')
+    const contestCollections = client.db('geniusQuestHub').collection('contests');
+    const userCollections = client.db('geniusQuestHub').collection('users');
+    const commentCollections = client.db('geniusQuestHub').collection('comments');
+    const contestSummeryCollections = client.db('geniusQuestHub').collection('contestSummerys');
+    const registeredCollections = client.db('geniusQuestHub').collection('registereds');
+    const submitContestCollections = client.db('geniusQuestHub').collection('submitContests');
+    const winnerCollections = client.db('geniusQuestHub').collection('winners');
 
 
     // users
@@ -383,6 +384,18 @@ async function run() {
       const result = await submitContestCollections.findOne(query);
       res.send(result)
     })
+
+    // contest winner
+    app.post('/contest-winner', async(req, res)=>{
+    const result = await winnerCollections.insertOne(req.body);
+    res.send(result)
+    })
+
+    app.get('/winners', async(req, res)=>{
+      const result = await winnerCollections.find(req.body).toArray();
+      res.send(result);
+    })
+
     // payment
     app.post('/create-payment', async(req, res)=>{
       const {regFee} = req.body;
