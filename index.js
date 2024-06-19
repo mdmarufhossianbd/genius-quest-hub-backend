@@ -173,8 +173,10 @@ async function run() {
     })
 
     app.get('/contests', async(req, res)=>{
-      const result = await contestCollections.find().toArray();
-      res.send(result)
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      const result = await contestCollections.find().skip(page * size).limit(size).toArray();
+      res.send(result);
     })
 
     app.get('/popular-contests', async (req, res) => {
@@ -258,7 +260,11 @@ async function run() {
       const result = await contestCollections.updateOne(filter, updateStatus);
       res.send(result);
     })
-
+    // pagination
+    app.get('/total-contest', async(req, res)=>{
+      const count = await contestCollections.estimatedDocumentCount();
+      res.send({count})
+    })
     // search
     app.get('/search', async(req, res) => {
       const searchKW = req.query.keyword;     
