@@ -183,11 +183,11 @@ async function run() {
     app.get('/popular-contests', async (req, res) => {
       const filter = req.query;
       const query = {
-        contestParticipateCount : {$gte : 0}
+        contestParticipateCount : {$gte : 1}
       };
       const options = {
         sort : {
-          contestParticipateCount : filter.sort === "asc" ? 1 : -1
+          contestParticipateCount : filter.sort === "asc" ? -1 : 1
         }
       };
       const result = await contestCollections.find(query, options).toArray();
