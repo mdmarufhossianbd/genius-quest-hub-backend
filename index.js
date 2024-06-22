@@ -1,23 +1,31 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
-const app = express();
-const stripe = require('stripe')(process.env.STRIPE_SECRECT_KEY) 
-const port = process.env.PORT || 5000
-
-app.use(cors({
-  origin: [
-    'http://localhost:5173'
-  ]
-}));
-app.use(express.json());
-
-
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const {
   MongoClient,
   ServerApiVersion,
   ObjectId
 } = require('mongodb');
+const cors = require('cors');
+const app = express();
+
+const stripe = require('stripe')(process.env.STRIPE_SECRECT_KEY)
+const port = process.env.PORT || 5000
+
+// middleware
+
+app.use(cors({
+  origin: [
+    'http://localhost:5173'
+  ],
+  credentials: true
+}));
+app.use(express.json());
+app.use(cookieParser());
+
+
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nss4adm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -28,6 +36,31 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+// middleware api
+const logger = (req, res, next) => {
+  next()
+}
+
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  console.log('token in the middleware', token);
+  if (!token) {
+    return res.status(401).send({
+      message: 'Unauthorized access'
+    })
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRECT, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({
+        message: 'unauthorized access'
+      })
+    }
+    req.user = decoded;
+    next();
+  })
+
+}
 
 async function run() {
   try {
@@ -42,6 +75,32 @@ async function run() {
     const submitContestCollections = client.db('geniusQuestHub').collection('submitContests');
     const winnerCollections = client.db('geniusQuestHub').collection('winners');
 
+    // auth related api
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '1h'
+      })
+
+      res
+        .cookie('token', token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none'
+        })
+        .send({
+          success: true
+        })
+    })
+
+    app.post('/logout', async (req, res) => {
+      const user = req.body;
+      res.clearCookie('token', {
+        maxAge: 0
+      }).send({
+        success: true
+      })
+    })
 
     // users
     app.post('/users', async (req, res) => {
@@ -74,15 +133,19 @@ async function run() {
       res.send(result);
     })
 
-    app.put('/update-user/:id', async(req, res)=>{
+    app.put('/update-user/:id', async (req, res) => {
       const id = req.params.id;
-      const filter = {_id : new ObjectId(id)};
-      const options = {upsert : true};
+      const filter = {
+        _id: new ObjectId(id)
+      };
+      const options = {
+        upsert: true
+      };
       const updateProfile = req.body;
       const profileInfoUpdate = {
         $set: {
-          name : updateProfile.name,
-          photo : updateProfile.photo
+          name: updateProfile.name,
+          photo: updateProfile.photo
         }
       }
       const result = await userCollections.updateOne(filter, profileInfoUpdate, options);
@@ -186,7 +249,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/contests', async(req, res)=>{
+    app.get('/contests', async (req, res) => {
       const page = parseInt(req.query.page);
       const size = parseInt(req.query.size);
       const result = await contestCollections.find().skip(page * size).limit(size).toArray();
@@ -196,11 +259,13 @@ async function run() {
     app.get('/popular-contests', async (req, res) => {
       const filter = req.query;
       const query = {
-        contestParticipateCount : {$gte : 1}
+        contestParticipateCount: {
+          $gte: 1
+        }
       };
       const options = {
-        sort : {
-          contestParticipateCount : filter.sort === "asc" ? -1 : 1
+        sort: {
+          contestParticipateCount: filter.sort === "asc" ? -1 : 1
         }
       };
       const result = await contestCollections.find(query, options).toArray();
@@ -209,12 +274,14 @@ async function run() {
 
     app.get('/contests/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: id};
+      const query = {
+        _id: id
+      };
       const result = await contestCollections.findOne(query);
       res.send(result)
     })
 
-    app.get('/contests/my-contests/:email', async (req, res) => {
+    app.get('/contests/my-contests/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = {
         creatorEmail: email
@@ -259,7 +326,7 @@ async function run() {
       res.send(result);
     })
 
-    app.patch('/contests/:id', async (req, res) => {
+    app.patch('/contests/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = {
         _id: new ObjectId(id)
@@ -273,17 +340,19 @@ async function run() {
       res.send(result);
     })
     // pagination
-    app.get('/total-contest', async(req, res)=>{
+    app.get('/total-contest', async (req, res) => {
       const count = await contestCollections.estimatedDocumentCount();
-      res.send({count})
+      res.send({
+        count
+      })
     })
     // search
-    app.get('/search', async(req, res) => {
-      const searchKW = req.query.keyword;     
+    app.get('/search', async (req, res) => {
+      const searchKW = req.query.keyword;
       let query = {
-        contestContestType : {
-          $regex : `${searchKW}`,
-          $options : 'i'
+        contestContestType: {
+          $regex: `${searchKW}`,
+          $options: 'i'
         }
       }
       const result = await contestCollections.find(query).toArray();
@@ -302,123 +371,143 @@ async function run() {
     })
 
     // contest summery
-    app.post('/contest-summery', async(req, res) => {
-      const result = await contestSummeryCollections.insertOne(req.body);      
+    app.post('/contest-summery', async (req, res) => {
+      const result = await contestSummeryCollections.insertOne(req.body);
       res.send(result)
     })
 
-    app.put('/contest-summery/:email', async(req, res)=>{
+    app.put('/contest-summery/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      const filter = {email : email};
-      const options = { upsert : true};
+      const filter = {
+        email: email
+      };
+      const options = {
+        upsert: true
+      };
       const updateConfirmBookContest = req.body;
       const registeredContest = {
-        $set : {
-          contestId : updateConfirmBookContest.contestId,
-          email : updateConfirmBookContest.email,
-          name : updateConfirmBookContest.name,
-          contestName : updateConfirmBookContest.contestName,
-          contestRegistrationFee : updateConfirmBookContest.contestRegistrationFee,
-          creatorEmail : updateConfirmBookContest.creatorEmail,
-          creatorName : updateConfirmBookContest.creatorName,
-          contestDeadline : updateConfirmBookContest.contestDeadline,
-          contestImage : updateConfirmBookContest.contestImage,
-          contestPrize : updateConfirmBookContest.contestPrize,
-          contestPublishDate : updateConfirmBookContest.contestPublishDate,
-          contestType : updateConfirmBookContest.contestContestType
+        $set: {
+          contestId: updateConfirmBookContest.contestId,
+          email: updateConfirmBookContest.email,
+          name: updateConfirmBookContest.name,
+          contestName: updateConfirmBookContest.contestName,
+          contestRegistrationFee: updateConfirmBookContest.contestRegistrationFee,
+          creatorEmail: updateConfirmBookContest.creatorEmail,
+          creatorName: updateConfirmBookContest.creatorName,
+          contestDeadline: updateConfirmBookContest.contestDeadline,
+          contestImage: updateConfirmBookContest.contestImage,
+          contestPrize: updateConfirmBookContest.contestPrize,
+          contestPublishDate: updateConfirmBookContest.contestPublishDate,
+          contestType: updateConfirmBookContest.contestContestType
         }
       }
       const result = await contestSummeryCollections.updateOne(filter, registeredContest, options);
       res.send(result);
     })
 
-    app.get('/contest-summery', async(req, res)=>{
-      const email = req.query.email;      
-      const query = {email : email};      
-      const result = await contestSummeryCollections.find(query).toArray();      
+    app.get('/contest-summery', async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        email: email
+      };
+      const result = await contestSummeryCollections.find(query).toArray();
       res.send(result)
     })
 
     // registered contest
-    app.post('/registered-contest', async(req, res)=>{
+    app.post('/registered-contest', async (req, res) => {
       const regContest = req.body;
       const result = await registeredCollections.insertOne(req.body);
       // update contestParticipateCount
       const updatePraticipate = {
-        $inc : { contestParticipateCount : 1}
+        $inc: {
+          contestParticipateCount: 1
+        }
       }
-      const contestQuery = {_id : new ObjectId(regContest.contestId)}
+      const contestQuery = {
+        _id: new ObjectId(regContest.contestId)
+      }
       const updatePraticipateCount = await contestCollections.updateOne(contestQuery, updatePraticipate)
       res.send(result);
     })
 
-    app.get('/registered-contests/:id', async(req, res)=>{
+    app.get('/registered-contests/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)};
+      const query = {
+        _id: new ObjectId(id)
+      };
       const result = await registeredCollections.findOne(query);
       res.send(result)
     })
 
-    app.get('/registered-contests', async(req, res)=>{
+    app.get('/registered-contests', async (req, res) => {
       const result = await registeredCollections.find(req.body).toArray();
       res.send(result);
     })
 
-    app.get('/registered-contest', async(req, res)=>{
+    app.get('/registered-contest', async (req, res) => {
       const email = req.query.email;
-      const query = {userEmail : email};
+      const query = {
+        userEmail: email
+      };
       const result = await registeredCollections.find(query).toArray();
       res.send(result);
     })
 
-    app.get('/registered-contest/creator', async(req, res)=>{
+    app.get('/registered-contest/creator', verifyToken, async (req, res) => {
       const email = req.query.email;
-      const query = {creatorEmail : email};
+      const query = {
+        creatorEmail: email
+      };
       const result = await registeredCollections.find(query).toArray();
       res.send(result);
     })
 
     // contest submit
-    app.post('/submit-contest', async(req, res)=>{
+    app.post('/submit-contest', async (req, res) => {
       const result = await submitContestCollections.insertOne(req.body);
       res.send(result)
     })
 
-    app.get('/submit-contest', async(req, res)=>{
+    app.get('/submit-contest', async (req, res) => {
       const result = await submitContestCollections.find().toArray();
       res.send(result)
     })
 
-    app.get('/submit-contest/:id', async(req, res)=>{
+    app.get('/submit-contest/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)};
+      const query = {
+        _id: new ObjectId(id)
+      };
       const result = await submitContestCollections.findOne(query);
       res.send(result)
     })
 
     // contest winner
-    app.post('/contest-winner', async(req, res)=>{
-    const result = await winnerCollections.insertOne(req.body);
-    res.send(result)
+    app.post('/contest-winner', async (req, res) => {
+      const result = await winnerCollections.insertOne(req.body);
+      res.send(result)
     })
 
-    app.get('/winners', async(req, res)=>{
+    app.get('/winners', async (req, res) => {
       const result = await winnerCollections.find(req.body).toArray();
       res.send(result);
     })
 
 
     // payment
-    app.post('/create-payment', async(req, res)=>{
-      const {regFee} = req.body;
-      const amount = parseInt( regFee * 100);
+    app.post('/create-payment', async (req, res) => {
+      const {
+        regFee
+      } = req.body;
+      const amount = parseInt(regFee * 100);
       const paymentIntent = await stripe.paymentIntents.create({
-        amount : amount,
-        currency : 'usd',
-        payment_method_types : ['card']
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
       })
       res.send({
-        clientSecret : paymentIntent.client_secret
+        clientSecret: paymentIntent.client_secret
       })
     })
 
