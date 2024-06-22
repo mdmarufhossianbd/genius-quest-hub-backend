@@ -1,5 +1,6 @@
-require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const {
@@ -7,7 +8,7 @@ const {
   ServerApiVersion,
   ObjectId
 } = require('mongodb');
-const cors = require('cors');
+
 const app = express();
 
 const stripe = require('stripe')(process.env.STRIPE_SECRECT_KEY)
@@ -19,7 +20,8 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://genius-quest-hub.web.app',
-    'https://genius-quest-hub.firebaseapp.com'
+    'https://genius-quest-hub.firebaseapp.com',
+    'https://luminous-dusk-9dec82.netlify.app'
   ],
   credentials: true
 }));
