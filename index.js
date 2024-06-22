@@ -17,7 +17,9 @@ const port = process.env.PORT || 5000
 
 app.use(cors({
   origin: [
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'https://genius-quest-hub.web.app',
+    'https://genius-quest-hub.firebaseapp.com'
   ],
   credentials: true
 }));
@@ -65,7 +67,7 @@ const verifyToken = (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const contestCollections = client.db('geniusQuestHub').collection('contests');
     const userCollections = client.db('geniusQuestHub').collection('users');
