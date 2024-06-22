@@ -5,8 +5,6 @@ const app = express();
 const stripe = require('stripe')(process.env.STRIPE_SECRECT_KEY) 
 const port = process.env.PORT || 5000
 
-
-
 app.use(cors({
   origin: [
     'http://localhost:5173'
@@ -82,7 +80,10 @@ async function run() {
       const options = {upsert : true};
       const updateProfile = req.body;
       const profileInfoUpdate = {
-        $set: {name : updateProfile.name}
+        $set: {
+          name : updateProfile.name,
+          photo : updateProfile.photo
+        }
       }
       const result = await userCollections.updateOne(filter, profileInfoUpdate, options);
       res.send
@@ -208,9 +209,7 @@ async function run() {
 
     app.get('/contests/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {
-        _id: new ObjectId(id)
-      };
+      const query = {_id: id};
       const result = await contestCollections.findOne(query);
       res.send(result)
     })
@@ -407,6 +406,7 @@ async function run() {
       const result = await winnerCollections.find(req.body).toArray();
       res.send(result);
     })
+
 
     // payment
     app.post('/create-payment', async(req, res)=>{
